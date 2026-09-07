@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fotos de Nuestra Boda</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f7f5f0; color: #4a4a4a; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+    .card { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; max-width: 400px; width: 100%; border: 1px solid #e8e3d9; }
+    h1 { font-family: 'Georgia', serif; color: #8c7853; margin-bottom: 5px; }
+    p { font-size: 14px; color: #7a7a7a; margin-bottom: 25px; }
+    .upload-btn-wrapper { position: relative; overflow: hidden; display: inline-block; width: 100%; }
+    .btn { border: 2px dashed #8c7853; color: #8c7853; background-color: white; padding: 20px; border-radius: 8px; font-size: 16px; font-weight: bold; width: 100%; box-sizing: border-box; cursor: pointer; transition: all 0.3s; }
+    .btn:hover { background-color: #fcfbfa; }
+    input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; }
+    .progress-container { margin-top: 20px; display: none; }
+    .progress-bar { background-color: #e0e0e0; border-radius: 8px; overflow: hidden; height: 10px; width: 100%; }
+    .progress-fill { background-color: #8c7853; height: 100%; width: 0%; transition: width 0.2s; }
+    #status { margin-top: 15px; font-weight: bold; font-size: 14px; }
+    .success { color: #4682b4; }
+    .error { color: #b22222; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h1>¡Bienvenidos a nuestra Boda! 🤍</h1>
+  <p>Ayúdanos a guardar cada recuerdo. Sube aquí tus fotos y videos favoritos del gran día.</p>
+
+  <div class="upload-btn-wrapper">
+    <button class="btn" id="btn-text">📸 Seleccionar fotos o videos</button>
+    <input type="file" id="files" accept="image/*,video/*" multiple onchange="startUpload()">
+  </div>
+
+  <div class="progress-container" id="progress-area">
+    <div class="progress-bar"><div class="progress-fill" id="bar"></div></div>
+    <div id="status">Subiendo archivos...</div>
+  </div>
+</div>
+
+<script>
+  // ¡IMPORTANTE! Reemplaza esto con la URL de tu script implementado
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxHVG0HwmjPQzHKWFeCP4BegeNiFvTmTPeBVNQEK6wRzdywzIcXMXgVZEwffGRhxRwPjQ/exec';
+
+  let filesToUpload = [];
+  let currentFileIndex = 0;
+
+  function startUpload() {
+    const input = document.getElementById('files');
+    filesToUpload = input.files;
+    if (filesToUpload.length === 0) return;
+
+    currentFileIndex = 0;
+    document.getElementById('progress-area').style.display = 'block';
+    document.getElementById('btn-text').innerText = "Subiendo...";
+    document.getElementById('files').disabled = true;
+
+    uploadNext();
+  }
+
+  function uploadNext() {
+    if (currentFileIndex >= filesToUpload.length) {
+      document.getElementById('status').className = "success";
+      document.getElementById('status').innerText = "¡Todo subido con éxito! ¡Gracias! 🎉";
+      document.getElementById('btn-text').innerText = "📸 Subir más";
+      document.getElementById('files').disabled = false;
+      document.getElementById('files').value = "";
+      return;
+    }
+
+    const file = filesToUpload[currentFileIndex];
+    const reader = new FileReader();
+
+    const percent = Math.round((currentFileIndex / filesToUpload.length) * 100);
+    document.getElementById('bar').style.width = percent + '%';
+    document.getElementById('status').className = "";
+    document.getElementById('status').innerText = `Subiendo archivo ${currentFileIndex + 1} de ${filesToUpload.length}: ${file.name}`;
+
+    reader.onload = function(e) {
+      const payload = {
+        base64: e.target.result,
+        filename: file.name
+      };
+
+      // Aquí hacemos la petición POST a tu Apps Script
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      })
+      .then(response => response.json())
+      .then(response => {
+        if(response.success) {
+          currentFileIndex++;
+          uploadNext();
+        } else {
+          showError("Error al guardar: " + response.error);
+        }
+      })
+      .catch(err => {
+        showError("Error de conexión: " + err.toString());
+      });
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  function showError(msg) {
+    document.getElementById('status').className = "error";
+    document.getElementById('status').innerText = msg;
+    document.getElementById('btn-text').innerText = "❌ Hubo un error";
+    document.getElementById('files').disabled = false;
+  }
+</script>
+
+</body>
+</html>
