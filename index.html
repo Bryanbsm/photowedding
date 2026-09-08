@@ -315,6 +315,9 @@
     <div class="progress-bar">
       <div class="progress-fill" id="bar"></div>
     </div>
+    <div style="font-size:11px;color:#999;margin-top:6px;text-align:center;">
+      Procesando tus recuerdos de forma segura 💙
+    </div>
   </div>
 
   <!-- CADA ARCHIVO -->
@@ -461,90 +464,83 @@
   }
 
   function uploadFile(index, payload) {
-    const xhr = new XMLHttpRequest();
-
-    xhr.open('POST', SCRIPT_URL, true);
-    xhr.setRequestHeader('Content-Type', 'text/plain;charset=UTF-8');
-
     /*
-     * ESTA ES LA PARTE IMPORTANTE:
-     * XMLHttpRequest permite conocer cuánto se ha enviado realmente.
+     * IMPORTANTE:
+     * Google Apps Script no permite obtener progreso real de subida desde
+     * otro dominio mediante XHR upload events sin una configuración CORS/OPTIONS.
+     *
+     * Por eso usamos fetch(), que evita el preflight que estaba provocando
+     * el error CORS, y animamos visualmente la barra mientras el servidor
+     * procesa el archivo.
      */
-    xhr.upload.addEventListener('progress', function(event) {
-      if (event.lengthComputable) {
-        const percent = Math.round((event.loaded / event.total) * 100);
+    let visualPercent = 0;
 
-        setMiniProgress(index, percent);
-        setFileStatus(index, 'Subiendo... ' + percent + '%');
+    setFileStatus(index, 'Subiendo... 0%');
+    setMiniProgress(index, 0);
 
-        updateOverall(getOverallProgress(index, percent));
+    // Animación visual hasta 90% mientras esperamos al servidor.
+    const progressTimer = setInterval(function() {
+      if (visualPercent < 90) {
+        // Más rápida al comienzo y más lenta cerca del 90%.
+        const increment = visualPercent < 50 ? 4 : visualPercent < 75 ? 2 : 1;
+        visualPercent = Math.min(90, visualPercent + increment);
+
+        setMiniProgress(index, visualPercent);
+        setFileStatus(index, 'Subiendo... ' + visualPercent + '%');
+        updateOverall(getOverallProgress(index, visualPercent));
       }
-    });
+    }, 180);
 
-    xhr.onload = function() {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        let response;
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: payload
+    })
+    .then(function(response) {
+      if (!response.ok) {
+        throw new Error('El servidor respondió con ' + response.status);
+      }
 
-        try {
-          response = JSON.parse(xhr.responseText);
-        } catch (e) {
-          response = { success: false, error: 'Respuesta inválida del servidor' };
-        }
+      return response.json();
+    })
+    .then(function(response) {
+      clearInterval(progressTimer);
 
-        if (response.success) {
-          markDone(index);
-          completed++;
+      if (response.success) {
+        markDone(index);
+        completed++;
 
-          updateOverall(getOverallProgress(index, 100));
+        updateOverall(getOverallProgress(index, 100));
 
-          // Pequeña pausa para que el usuario vea el ✓ verde
-          setTimeout(function() {
-            uploadNext(index + 1);
-          }, 250);
-
-        } else {
-          markFailed(index, response.error || 'No se pudo guardar');
-          failed++;
-          updateOverall(getOverallProgress(index, 100));
-          setTimeout(function() {
-            uploadNext(index + 1);
-          }, 250);
-        }
+        // Dejamos visible el check verde antes de pasar al siguiente.
+        setTimeout(function() {
+          uploadNext(index + 1);
+        }, 350);
 
       } else {
-        markFailed(index, 'Error del servidor (' + xhr.status + ')');
+        markFailed(index, response.error || 'No se pudo guardar');
         failed++;
+
         updateOverall(getOverallProgress(index, 100));
 
         setTimeout(function() {
           uploadNext(index + 1);
-        }, 250);
+        }, 350);
       }
-    };
+    })
+    .catch(function(err) {
+      clearInterval(progressTimer);
 
-    xhr.onerror = function() {
-      markFailed(index, 'Error de conexión');
+      markFailed(index, 'Error de conexión o servidor');
       failed++;
+
+      console.error('Error subiendo ' + selectedFiles[index].name + ':', err);
+
       updateOverall(getOverallProgress(index, 100));
 
       setTimeout(function() {
         uploadNext(index + 1);
-      }, 250);
-    };
-
-    xhr.ontimeout = function() {
-      markFailed(index, 'Tiempo de espera agotado');
-      failed++;
-      updateOverall(getOverallProgress(index, 100));
-
-      setTimeout(function() {
-        uploadNext(index + 1);
-      }, 250);
-    };
-
-    xhr.timeout = 120000;
-
-    xhr.send(payload);
+      }, 350);
+    });
   }
 
   /*
