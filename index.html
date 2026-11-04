@@ -6,9 +6,7 @@
   <title>Fotos de Nuestra Boda</title>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -44,6 +42,87 @@
       color: #7a7a7a;
       margin-bottom: 25px;
       line-height: 1.5;
+    }
+
+    /* NOMBRE */
+    #name-section { display: none; text-align: left; }
+
+    #name-section label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #6e6251;
+      margin-bottom: 8px;
+    }
+
+    #name-input {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px; /* 16px evita el zoom automático en iPhone */
+      border: 1px solid #d9d2c3;
+      border-radius: 8px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    #name-input:focus { border-color: #8c7853; }
+
+    #name-error {
+      display: none;
+      margin-top: 8px;
+      font-size: 13px;
+      color: #b22222;
+      line-height: 1.4;
+    }
+
+    .name-hint {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #9a9387;
+      line-height: 1.4;
+    }
+
+    .primary-btn {
+      margin-top: 14px;
+      width: 100%;
+      border: none;
+      background: #8c7853;
+      color: white;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .primary-btn:hover { background: #7d6a48; }
+
+    /* SECCIÓN DE CARGA */
+    #upload-section { display: none; }
+
+    .user-bar {
+      font-size: 13px;
+      color: #7a7a7a;
+      margin-bottom: 14px;
+    }
+
+    .user-bar strong { color: #6e6251; }
+
+    .link-btn {
+      background: none;
+      border: none;
+      color: #8c7853;
+      text-decoration: underline;
+      font-size: 13px;
+      cursor: pointer;
+      padding: 0;
+      font-family: inherit;
+    }
+
+    .link-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      text-decoration: none;
     }
 
     .upload-btn-wrapper {
@@ -85,6 +164,8 @@
       opacity: 0;
       cursor: pointer;
     }
+
+    input[type=file]:disabled { cursor: not-allowed; }
 
     /* PROGRESO GENERAL */
     .overall {
@@ -141,15 +222,8 @@
       transition: 0.25s;
     }
 
-    .file-item.done {
-      background: #f3fbf5;
-      border-color: #b9dfc1;
-    }
-
-    .file-item.failed {
-      background: #fff6f6;
-      border-color: #e8bcbc;
-    }
+    .file-item.done { background: #f3fbf5; border-color: #b9dfc1; }
+    .file-item.failed { background: #fff6f6; border-color: #e8bcbc; }
 
     .preview {
       width: 52px;
@@ -164,16 +238,9 @@
       font-size: 22px;
     }
 
-    .preview img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+    .preview img { width: 100%; height: 100%; object-fit: cover; }
 
-    .file-info {
-      min-width: 0;
-      flex: 1;
-    }
+    .file-info { min-width: 0; flex: 1; }
 
     .file-name {
       font-size: 13px;
@@ -184,21 +251,10 @@
       color: #514b42;
     }
 
-    .file-status {
-      font-size: 12px;
-      color: #8a8378;
-      margin-top: 4px;
-    }
+    .file-status { font-size: 12px; color: #8a8378; margin-top: 4px; }
 
-    .file-item.done .file-status {
-      color: #25803d;
-      font-weight: 600;
-    }
-
-    .file-item.failed .file-status {
-      color: #b22222;
-      font-weight: 600;
-    }
+    .file-item.done .file-status { color: #25803d; font-weight: 600; }
+    .file-item.failed .file-status { color: #b22222; font-weight: 600; }
 
     .mini-progress {
       margin-top: 7px;
@@ -216,13 +272,8 @@
       transition: width 0.15s linear;
     }
 
-    .file-item.done .mini-fill {
-      background: #39a956;
-    }
-
-    .file-item.failed .mini-fill {
-      background: #d9534f;
-    }
+    .file-item.done .mini-fill { background: #39a956; }
+    .file-item.failed .mini-fill { background: #d9534f; }
 
     .check {
       width: 28px;
@@ -239,13 +290,8 @@
       transition: 0.25s;
     }
 
-    .file-item.done .check {
-      background: #39a956;
-    }
-
-    .file-item.failed .check {
-      background: #d9534f;
-    }
+    .file-item.done .check { background: #39a956; }
+    .file-item.failed .check { background: #d9534f; }
 
     /* MENSAJE FINAL */
     #status {
@@ -284,9 +330,7 @@
       font-weight: 600;
     }
 
-    .reset-btn:hover {
-      background: #fcfbfa;
-    }
+    .reset-btn:hover { background: #fcfbfa; }
   </style>
 </head>
 
@@ -300,37 +344,73 @@
     Sube aquí tus fotos y videos favoritos del gran día.
   </p>
 
-  <div class="upload-btn-wrapper">
-    <button class="btn" id="btn-text">📸 Seleccionar fotos o videos</button>
-    <input type="file" id="files" accept="image/*,video/*" multiple>
+  <!-- PASO 1: NOMBRE (solo la primera vez) -->
+  <div id="name-section">
+    <label for="name-input">¿Cómo te llamas?</label>
+    <input type="text" id="name-input" placeholder="Ej: Juanito Herrera"
+           autocomplete="name" autocapitalize="words" maxlength="50">
+    <div id="name-error"></div>
+    <div class="name-hint">
+      Lo usaremos para identificar tus fotos y videos. Escribe tu nombre real, sin números ni símbolos.
+    </div>
+    <button class="primary-btn" id="name-btn" type="button">Continuar</button>
   </div>
 
-  <!-- PROGRESO GENERAL -->
-  <div class="overall" id="overall">
-    <div class="overall-top">
-      <span id="overall-text">Preparando archivos...</span>
-      <span id="overall-percent">0%</span>
+  <!-- PASO 2: CARGA -->
+  <div id="upload-section">
+    <div class="user-bar">
+      Subiendo como <strong id="user-name"></strong> ·
+      <button class="link-btn" id="change-name" type="button">¿No eres tú? Cambiar</button>
     </div>
 
-    <div class="progress-bar">
-      <div class="progress-fill" id="bar"></div>
+    <div class="upload-btn-wrapper">
+      <button class="btn" id="btn-text" type="button">📸 Seleccionar fotos o videos</button>
+      <input type="file" id="files" accept="image/*,video/*" multiple>
     </div>
-    <div style="font-size:11px;color:#999;margin-top:6px;text-align:center;">
-      Procesando tus recuerdos de forma segura 💙
+
+    <!-- PROGRESO GENERAL -->
+    <div class="overall" id="overall">
+      <div class="overall-top">
+        <span id="overall-text">Preparando archivos...</span>
+        <span id="overall-percent">0%</span>
+      </div>
+
+      <div class="progress-bar">
+        <div class="progress-fill" id="bar"></div>
+      </div>
+      <div style="font-size:11px;color:#999;margin-top:6px;text-align:center;">
+        Procesando tus recuerdos de forma segura 💙<br>
+        Los videos pesados pueden tardar un poco, por favor no cierres esta página.
+      </div>
     </div>
+
+    <!-- CADA ARCHIVO -->
+    <div id="file-list"></div>
+
+    <div id="status"></div>
+
+    <button class="reset-btn" id="reset-btn" type="button">📸 Subir más recuerdos</button>
   </div>
-
-  <!-- CADA ARCHIVO -->
-  <div id="file-list"></div>
-
-  <div id="status"></div>
-
-  <button class="reset-btn" id="reset-btn">📸 Subir más recuerdos</button>
 </div>
 
 <script>
-  // URL DE TU GOOGLE APPS SCRIPT
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxHVG0HwmjPQzHKWFeCP4BegeNiFvTmTPeBVNQEK6wRzdywzIcXMXgVZEwffGRhxRwPjQ/exec';
+  // URL DE TU GOOGLE APPS SCRIPT (debe ser el nuevo script con carga por partes)
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwOidXYfFbfYQB8D2g1BUiaxklY8ohLLkkvHPyseOEXGTJbUTcvJKYSYE4aBQeCB-W9-A/exec';
+
+  // Tamaño de cada parte: múltiplo de 256 KB (requisito de Google Drive).
+  // 3 MB => ~4 MB en base64, muy por debajo de los límites de Apps Script.
+  const CHUNK_SIZE = 3 * 1024 * 1024;
+  const MAX_RETRIES = 4;
+  const NAME_KEY = 'boda_nombre_invitado';
+
+  // ---------- ELEMENTOS ----------
+  const nameSection = document.getElementById('name-section');
+  const nameInput = document.getElementById('name-input');
+  const nameBtn = document.getElementById('name-btn');
+  const nameError = document.getElementById('name-error');
+  const uploadSection = document.getElementById('upload-section');
+  const userNameEl = document.getElementById('user-name');
+  const changeNameBtn = document.getElementById('change-name');
 
   const input = document.getElementById('files');
   const button = document.getElementById('btn-text');
@@ -345,17 +425,187 @@
   let selectedFiles = [];
   let completed = 0;
   let failed = 0;
+  let uploading = false;
+  let totalBytes = 0;
+  let doneBytes = 0; // bytes de archivos ya terminados (ok o con error)
+  let guest = null;  // { display, slug }
 
+  // ---------- NOMBRE: VALIDACIÓN ----------
+  const CONNECTORS = ['de', 'del', 'la', 'las', 'los', 'y', 'da', 'di', 'do', 'van', 'von', 'san'];
+  const FAKE_WORDS = ['test', 'prueba', 'asdf', 'qwerty', 'nombre', 'anonimo', 'xxx', 'abc', 'hola', 'invitado', 'user', 'usuario'];
+  const VOWELS = 'aeiouy';
+
+  function stripAccents(s) {
+    return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
+  function validateName(raw) {
+    const clean = (raw || '').trim().replace(/\s+/g, ' ');
+
+    if (!clean) return fail('Escribe tu nombre para continuar.');
+    if (clean.length > 40) return fail('El nombre es muy largo. Usa máximo 40 caracteres.');
+
+    if (!/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+(?: [A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+)*$/.test(clean)) {
+      return fail('Usa solo letras: sin números ni caracteres especiales.');
+    }
+
+    const words = clean.split(' ');
+    if (words.length > 5) return fail('Escribe solo tu nombre y apellido(s).');
+
+    let hasRealWord = false;
+
+    for (const w of words) {
+      const lw = stripAccents(w).toLowerCase();
+
+      if (lw.length === 1) {
+        return fail('No uses iniciales. Escribe tu nombre completo.');
+      }
+
+      if (lw.length === 2) {
+        if (!CONNECTORS.includes(lw)) {
+          return fail('"' + w + '" parece muy corto o una inicial. Escribe tu nombre completo.');
+        }
+        continue;
+      }
+
+      if (CONNECTORS.includes(lw)) continue;
+      hasRealWord = true;
+
+      if (FAKE_WORDS.includes(lw)) {
+        return fail('Escribe tu nombre real, por favor.');
+      }
+
+      const notName = !new RegExp('[' + VOWELS + ']').test(lw)       // sin vocales
+        || new RegExp('[^' + VOWELS + ']{4,}').test(lw)               // 4+ consonantes seguidas
+        || /(.)\1\1/.test(lw);                                        // 3 letras iguales seguidas
+
+      // Palabras de 3 letras: deben verse como un nombre (ANA, LUZ, EVA, TOM...) y no siglas (ERT, XYZ)
+      const v = '[' + VOWELS + ']', c = '[^' + VOWELS + ']';
+      const okThree = new RegExp('^(?:' + c + v + c + '|' + v + c + v + '|' + v + v + c + '|' + c + v + v + ')$').test(lw);
+
+      if (notName || (lw.length === 3 && !okThree)) {
+        return fail('"' + w + '" no parece un nombre. Escribe tu nombre completo (sin siglas ni iniciales).');
+      }
+    }
+
+    if (!hasRealWord) return fail('Escribe tu nombre real, por favor.');
+
+    const display = words
+      .map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); })
+      .join(' ');
+
+    const slug = words
+      .map(function (w) { return stripAccents(w).toLowerCase(); })
+      .join('_');
+
+    return { ok: true, display: display, slug: slug };
+
+    function fail(message) { return { ok: false, error: message }; }
+  }
+
+  function saveGuest(g) {
+    try { localStorage.setItem(NAME_KEY, JSON.stringify(g)); } catch (e) { /* modo privado: sigue funcionando sin guardar */ }
+  }
+
+  function loadGuest() {
+    try {
+      const raw = localStorage.getItem(NAME_KEY);
+      if (!raw) return null;
+      const g = JSON.parse(raw);
+      // Revalida por si el dato guardado fuera inválido
+      const check = validateName(g && g.display);
+      return check.ok ? { display: check.display, slug: check.slug } : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function clearGuest() {
+    try { localStorage.removeItem(NAME_KEY); } catch (e) {}
+  }
+
+  function showNameStep() {
+    guest = null;
+    uploadSection.style.display = 'none';
+    nameSection.style.display = 'block';
+    nameError.style.display = 'none';
+    nameInput.value = '';
+    nameInput.focus();
+  }
+
+  function showUploadStep() {
+    nameSection.style.display = 'none';
+    uploadSection.style.display = 'block';
+    userNameEl.textContent = guest.display;
+  }
+
+  function submitName() {
+    const result = validateName(nameInput.value);
+
+    if (!result.ok) {
+      nameError.textContent = result.error;
+      nameError.style.display = 'block';
+      return;
+    }
+
+    guest = { display: result.display, slug: result.slug };
+    saveGuest(guest);
+    showUploadStep();
+  }
+
+  nameBtn.addEventListener('click', submitName);
+  nameInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') submitName();
+  });
+  nameInput.addEventListener('input', function () { nameError.style.display = 'none'; });
+
+  changeNameBtn.addEventListener('click', function () {
+    if (uploading) return;
+    clearGuest();
+    resetUploader();
+    showNameStep();
+  });
+
+  // ---------- NOMBRE DE ARCHIVO ----------
+  function buildFilename(slug, originalName) {
+    const safeOriginal = stripAccents(originalName)
+      .replace(/\s+/g, '_')
+      .replace(/[^A-Za-z0-9._-]/g, '');
+
+    return slug + '_' + (safeOriginal || 'archivo');
+  }
+
+  function guessMime(file) {
+    if (file.type) return file.type;
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const map = {
+      mp4: 'video/mp4', mov: 'video/quicktime', m4v: 'video/x-m4v', '3gp': 'video/3gpp',
+      webm: 'video/webm', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png',
+      heic: 'image/heic', heif: 'image/heif', gif: 'image/gif', webp: 'image/webp'
+    };
+    return map[ext] || 'application/octet-stream';
+  }
+
+  // ---------- CARGA ----------
   input.addEventListener('change', startUpload);
   resetBtn.addEventListener('click', resetUploader);
 
-  function startUpload() {
-    selectedFiles = Array.from(input.files);
+  window.addEventListener('beforeunload', function (e) {
+    if (uploading) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
 
-    if (!selectedFiles.length) return;
+  async function startUpload() {
+    selectedFiles = Array.from(input.files);
+    if (!selectedFiles.length || !guest) return;
 
     completed = 0;
     failed = 0;
+    doneBytes = 0;
+    totalBytes = selectedFiles.reduce(function (sum, f) { return sum + f.size; }, 0);
+    uploading = true;
 
     overall.style.display = 'block';
     fileList.style.display = 'block';
@@ -364,20 +614,25 @@
     resetBtn.style.display = 'none';
 
     button.disabled = true;
+    input.disabled = true;
+    changeNameBtn.disabled = true;
     button.innerText = '⏳ Subiendo recuerdos...';
 
     createFileCards();
-
     updateOverall(0);
 
-    // Se suben uno por uno para evitar saturar Apps Script
-    uploadNext(0);
+    // Uno por uno para no saturar Apps Script
+    for (let i = 0; i < selectedFiles.length; i++) {
+      await uploadOne(i);
+    }
+
+    finishUpload();
   }
 
   function createFileCards() {
     fileList.innerHTML = '';
 
-    selectedFiles.forEach((file, index) => {
+    selectedFiles.forEach(function (file, index) {
       const item = document.createElement('div');
       item.className = 'file-item';
       item.id = 'file-' + index;
@@ -388,7 +643,10 @@
       if (file.type.startsWith('image/')) {
         const img = document.createElement('img');
         img.alt = 'Vista previa';
-        img.src = URL.createObjectURL(file);
+        const url = URL.createObjectURL(file);
+        img.onload = function () { URL.revokeObjectURL(url); };
+        img.onerror = function () { preview.innerText = '🖼️'; };
+        img.src = url;
         preview.appendChild(img);
       } else {
         preview.innerText = '🎥';
@@ -432,154 +690,144 @@
     });
   }
 
-  function uploadNext(index) {
-    if (index >= selectedFiles.length) {
-      finishUpload();
-      return;
-    }
-
+  async function uploadOne(index) {
     const file = selectedFiles[index];
 
-    setFileStatus(index, 'Subiendo... 0%');
+    setFileStatus(index, 'Preparando... 0%');
     setMiniProgress(index, 0);
 
-    const reader = new FileReader();
+    try {
+      if (!file.size) throw new Error('El archivo está vacío');
 
-    reader.onload = function(event) {
-      const payload = JSON.stringify({
-        base64: event.target.result,
-        filename: file.name
+      const filename = buildFilename(guest.slug, file.name);
+
+      // 1) Abrir sesión de carga en Drive
+      const init = await withRetry(function () {
+        return postJSON({
+          action: 'init',
+          filename: filename,
+          mimeType: guessMime(file),
+          size: file.size
+        });
       });
 
-      uploadFile(index, payload);
-    };
+      // 2) Enviar el archivo por partes
+      let offset = 0;
+      let lastResponse = null;
 
-    reader.onerror = function() {
-      markFailed(index, 'No se pudo leer el archivo');
+      while (offset < file.size) {
+        const end = Math.min(offset + CHUNK_SIZE, file.size);
+        const data = await readChunk(file.slice(offset, end));
+        const start = offset;
+
+        lastResponse = await withRetry(function () {
+          return postJSON({
+            action: 'chunk',
+            sessionUrl: init.sessionUrl,
+            start: start,
+            end: end - 1,
+            total: file.size,
+            data: data
+          });
+        });
+
+        offset = end;
+
+        const percent = Math.floor((offset / file.size) * 100);
+        // Reservamos el 100% para cuando Drive confirme el archivo completo
+        setMiniProgress(index, Math.min(percent, 99));
+        setFileStatus(index, 'Subiendo... ' + Math.min(percent, 99) + '%');
+        updateOverall(Math.round(((doneBytes + offset) / totalBytes) * 100));
+      }
+
+      if (!lastResponse || !lastResponse.done) {
+        throw new Error('Drive no confirmó el archivo completo');
+      }
+
+      markDone(index);
+      completed++;
+    } catch (err) {
+      console.error('Error subiendo ' + file.name + ':', err);
+      markFailed(index, 'No se pudo subir. Intenta de nuevo');
       failed++;
-      uploadNext(index + 1);
-    };
+    }
 
-    reader.readAsDataURL(file);
+    doneBytes += file.size;
+    updateOverall(Math.round((doneBytes / totalBytes) * 100));
+
+    // Deja ver el resultado un instante y prepara el siguiente
+    await sleep(300);
+    const next = index + 1;
+    if (next < selectedFiles.length) setFileStatus(next, 'Preparando...');
   }
 
-  function uploadFile(index, payload) {
-    /*
-     * IMPORTANTE:
-     * Google Apps Script no permite obtener progreso real de subida desde
-     * otro dominio mediante XHR upload events sin una configuración CORS/OPTIONS.
-     *
-     * Por eso usamos fetch(), que evita el preflight que estaba provocando
-     * el error CORS, y animamos visualmente la barra mientras el servidor
-     * procesa el archivo.
-     */
-    let visualPercent = 0;
-
-    setFileStatus(index, 'Subiendo... 0%');
-    setMiniProgress(index, 0);
-
-    // Animación visual hasta 90% mientras esperamos al servidor.
-    const progressTimer = setInterval(function() {
-      if (visualPercent < 90) {
-        // Más rápida al comienzo y más lenta cerca del 90%.
-        const increment = visualPercent < 50 ? 4 : visualPercent < 75 ? 2 : 1;
-        visualPercent = Math.min(90, visualPercent + increment);
-
-        setMiniProgress(index, visualPercent);
-        setFileStatus(index, 'Subiendo... ' + visualPercent + '%');
-        updateOverall(getOverallProgress(index, visualPercent));
-      }
-    }, 180);
-
-    fetch(SCRIPT_URL, {
-      method: 'POST',
-      body: payload
-    })
-    .then(function(response) {
-      if (!response.ok) {
-        throw new Error('El servidor respondió con ' + response.status);
-      }
-
-      return response.json();
-    })
-    .then(function(response) {
-      clearInterval(progressTimer);
-
-      if (response.success) {
-        markDone(index);
-        completed++;
-
-        updateOverall(getOverallProgress(index, 100));
-
-        // Dejamos visible el check verde antes de pasar al siguiente.
-        setTimeout(function() {
-          uploadNext(index + 1);
-        }, 350);
-
-      } else {
-        markFailed(index, response.error || 'No se pudo guardar');
-        failed++;
-
-        updateOverall(getOverallProgress(index, 100));
-
-        setTimeout(function() {
-          uploadNext(index + 1);
-        }, 350);
-      }
-    })
-    .catch(function(err) {
-      clearInterval(progressTimer);
-
-      markFailed(index, 'Error de conexión o servidor');
-      failed++;
-
-      console.error('Error subiendo ' + selectedFiles[index].name + ':', err);
-
-      updateOverall(getOverallProgress(index, 100));
-
-      setTimeout(function() {
-        uploadNext(index + 1);
-      }, 350);
+  function readChunk(blob) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function () {
+        const result = String(reader.result);
+        resolve(result.substring(result.indexOf(',') + 1)); // quita "data:...;base64,"
+      };
+      reader.onerror = function () { reject(new Error('No se pudo leer el archivo')); };
+      reader.readAsDataURL(blob);
     });
   }
 
-  /*
-   * Calcula el progreso total teniendo en cuenta:
-   * - archivos anteriores terminados
-   * - progreso del archivo actual
-   */
-  function getOverallProgress(currentIndex, currentPercent) {
-    if (!selectedFiles.length) return 0;
+  // POST como texto plano (no dispara preflight CORS con Apps Script)
+  async function postJSON(obj) {
+    const response = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(obj)
+    });
 
-    const progress = ((currentIndex + currentPercent / 100) / selectedFiles.length) * 100;
+    if (!response.ok) throw new Error('El servidor respondió con ' + response.status);
 
-    return Math.min(100, Math.round(progress));
+    const json = await response.json();
+    if (!json.success) throw new Error(json.error || 'Error del servidor');
+
+    return json;
   }
 
+  async function withRetry(fn) {
+    let lastError;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        return await fn();
+      } catch (err) {
+        lastError = err;
+        if (attempt < MAX_RETRIES) await sleep(800 * attempt);
+      }
+    }
+
+    throw lastError;
+  }
+
+  function sleep(ms) {
+    return new Promise(function (resolve) { setTimeout(resolve, ms); });
+  }
+
+  // ---------- UI ----------
   function updateOverall(percent) {
+    percent = Math.max(0, Math.min(100, percent));
     overallBar.style.width = percent + '%';
     overallPercent.innerText = percent + '%';
 
-    if (completed < selectedFiles.length) {
+    const processed = completed + failed;
+    if (processed < selectedFiles.length) {
       overallText.innerText =
-        'Cargando ' + (completed + 1) + ' de ' + selectedFiles.length + ' archivos';
+        'Cargando ' + (processed + 1) + ' de ' + selectedFiles.length + ' archivos';
     }
   }
 
   function setMiniProgress(index, percent) {
     const bar = document.getElementById('mini-fill-' + index);
-
-    if (bar) {
-      bar.style.width = percent + '%';
-    }
+    if (bar) bar.style.width = percent + '%';
   }
 
   function setFileStatus(index, text) {
     const element = document.getElementById('file-status-' + index);
-
-    if (element) {
-      element.innerText = text;
-    }
+    if (element) element.innerText = text;
   }
 
   function markDone(index) {
@@ -608,6 +856,7 @@
   }
 
   function finishUpload() {
+    uploading = false;
     overallBar.style.width = '100%';
     overallPercent.innerText = '100%';
 
@@ -616,11 +865,10 @@
 
       status.className = 'success';
       status.innerHTML =
-        '🎉 <strong>¡Todo listo!</strong><br>' +
+        '🎉 <strong>¡Todo listo, ' + escapeHtml(guest.display.split(' ')[0]) + '!</strong><br>' +
         'Se cargaron correctamente ' + completed + ' archivo' +
         (completed === 1 ? '' : 's') +
         '.<br>¡Gracias por compartir estos recuerdos con nosotros! 🤍';
-
     } else {
       overallText.innerText = completed + ' cargados · ' + failed + ' con error';
 
@@ -628,14 +876,23 @@
       status.innerHTML =
         '⚠️ Algunos archivos no pudieron cargarse.<br>' +
         'Cargados: <strong>' + completed + '</strong> · ' +
-        'Con error: <strong>' + failed + '</strong>';
+        'Con error: <strong>' + failed + '</strong><br>' +
+        '<span style="font-weight:400;font-size:13px;">Toca "Subir más recuerdos" para intentarlo de nuevo con esos archivos.</span>';
     }
 
     status.style.display = 'block';
 
     button.disabled = false;
+    input.disabled = false;
+    changeNameBtn.disabled = false;
     button.innerText = '📸 Seleccionar más fotos o videos';
     resetBtn.style.display = 'inline-block';
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
   }
 
   function resetUploader() {
@@ -643,6 +900,8 @@
     selectedFiles = [];
     completed = 0;
     failed = 0;
+    doneBytes = 0;
+    totalBytes = 0;
 
     overall.style.display = 'none';
     fileList.style.display = 'none';
@@ -656,7 +915,17 @@
     overallText.innerText = 'Preparando archivos...';
 
     button.disabled = false;
+    input.disabled = false;
     button.innerText = '📸 Seleccionar fotos o videos';
+  }
+
+  // ---------- INICIO ----------
+  guest = loadGuest();
+
+  if (guest) {
+    showUploadStep();
+  } else {
+    showNameStep();
   }
 </script>
 
