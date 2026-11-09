@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fotos de Nuestra Boda</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f7f5f0;
+      color: #4a4a4a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+      text-align: center;
+      max-width: 520px;
+      width: 100%;
+      border: 1px solid #e8e3d9;
+    }
+
+    h1 {
+      font-family: 'Georgia', serif;
+      color: #8c7853;
+      margin: 0 0 5px;
+    }
+
+    .intro {
+      font-size: 14px;
+      color: #7a7a7a;
+      margin-bottom: 25px;
+      line-height: 1.5;
+    }
+
+    .upload-btn-wrapper {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+      width: 100%;
+    }
+
+    .btn {
+      border: 2px dashed #8c7853;
+      color: #8c7853;
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      width: 100%;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn:hover { background-color: #fcfbfa; transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    input[type=file] {
+      font-size: 100px;
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    /* MODAL DE NOMBRE */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      backdrop-filter: blur(3px);
+    }
+
+    .modal-content {
+      background: white;
+      padding: 25px;
+      border-radius: 16px;
+      text-align: center;
+      max-width: 90%;
+      width: 350px;
+      border: 1px solid #e8e3d9;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+
+    .modal-content h2 { margin: 0 0 10px; color: #1e3a5f; font-size: 20px; }
+    .modal-content p { font-size: 13px; color: #7a7a7a; margin-bottom: 15px; }
+    
+    .name-input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #dcd7ce;
+      border-radius: 8px;
+      font-size: 15px;
+      outline: none;
+      color: #4a4a4a;
+      transition: border-color 0.3s;
+    }
+    
+    .name-input:focus { border-color: #8c7853; }
+    
+    .error-msg {
+      color: #b22222;
+      font-size: 12px;
+      margin-top: 8px;
+      min-height: 15px;
+      font-weight: 600;
+    }
+
+    .modal-btn {
+      background-color: #8c7853;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-weight: bold;
+      width: 100%;
+      cursor: pointer;
+      margin-top: 15px;
+      transition: 0.3s;
+    }
+    .modal-btn:hover { background-color: #7a6847; }
+
+    /* PROGRESO GENERAL */
+    .overall { display: none; margin-top: 22px; text-align: left; }
+    .overall-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; font-size: 13px; font-weight: 600; color: #6e6251; }
+    .progress-bar { background-color: #e8e5df; border-radius: 999px; overflow: hidden; height: 10px; width: 100%; }
+    .progress-fill { background-color: #8c7853; height: 100%; width: 0%; transition: width 0.2s ease; border-radius: 999px; }
+
+    /* LISTA DE ARCHIVOS */
+    #file-list { display: none; margin-top: 18px; text-align: left; max-height: 360px; overflow-y: auto; padding-right: 3px; }
+    .file-item { display: flex; gap: 12px; align-items: center; padding: 11px; margin-bottom: 9px; background: #faf9f6; border: 1px solid #ece8df; border-radius: 12px; transition: 0.25s; }
+    .file-item.done { background: #f3fbf5; border-color: #b9dfc1; }
+    .file-item.failed { background: #fff6f6; border-color: #e8bcbc; }
+    .preview { width: 52px; height: 52px; flex: 0 0 52px; border-radius: 9px; overflow: hidden; background: #e9e5dd; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+    .preview img { width: 100%; height: 100%; object-fit: cover; }
+    .file-info { min-width: 0; flex: 1; }
+    .file-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #514b42; }
+    .file-status { font-size: 12px; color: #8a8378; margin-top: 4px; }
+    .file-item.done .file-status { color: #25803d; font-weight: 600; }
+    .file-item.failed .file-status { color: #b22222; font-weight: 600; }
+    .mini-progress { margin-top: 7px; height: 6px; background: #e5e2dc; border-radius: 99px; overflow: hidden; }
+    .mini-fill { width: 0%; height: 100%; background: #8c7853; border-radius: 99px; transition: width 0.15s linear; }
+    .file-item.done .mini-fill { background: #39a956; }
+    .file-item.failed .mini-fill { background: #d9534f; }
+    .check { width: 28px; height: 28px; flex: 0 0 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #e5e1d8; color: white; font-size: 15px; font-weight: bold; transition: 0.25s; }
+    .file-item.done .check { background: #39a956; }
+    .file-item.failed .check { background: #d9534f; }
+
+    /* MENSAJE FINAL */
+    #status { display: none; margin-top: 17px; padding: 12px; border-radius: 10px; font-weight: 600; font-size: 14px; line-height: 1.4; }
+    #status.success { display: block; color: #25753a; background: #eff9f1; border: 1px solid #c7e8ce; }
+    #status.error { display: block; color: #a62b27; background: #fff2f2; border: 1px solid #edc1bf; }
+    .reset-btn { display: none; margin: 12px auto 0; border: 1px solid #8c7853; color: #8c7853; background: white; padding: 9px 15px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    .reset-btn:hover { background: #fcfbfa; }
+  </style>
+</head>
+
+<body>
+
+<!-- Modal de Registro de Nombre -->
+<div id="name-modal" class="modal-overlay">
+  <div class="modal-content">
+    <h2>¿Quién sube las fotos?</h2>
+    <p>Ingresa tu nombre y apellido para saber de quién son estos hermosos recuerdos.</p>
+    <input type="text" id="uploader-name" class="name-input" placeholder="Ej. Juanito Herrera" autocomplete="off">
+    <div id="name-error" class="error-msg"></div>
+    <button id="save-name-btn" class="modal-btn">Continuar</button>
+  </div>
+</div>
+
+<div class="card">
+  <h1>¡Bienvenidos a nuestra Boda! 💙</h1>
+
+  <p class="intro">
+    Ayúdanos a guardar cada recuerdo.<br>
+    Sube aquí tus fotos y videos favoritos del gran día.
+  </p>
+
+  <div class="upload-btn-wrapper">
+    <button class="btn" id="btn-text">📸 Seleccionar fotos o videos</button>
+    <input type="file" id="files" accept="image/*,video/*" multiple>
+  </div>
+
+  <div class="overall" id="overall">
+    <div class="overall-top">
+      <span id="overall-text">Preparando archivos...</span>
+      <span id="overall-percent">0%</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="bar"></div>
+    </div>
+    <div style="font-size:11px;color:#999;margin-top:6px;text-align:center;">
+      Procesando tus recuerdos de forma segura 💙
+    </div>
+  </div>
+
+  <div id="file-list"></div>
+  <div id="status"></div>
+  <button class="reset-btn" id="reset-btn">📸 Subir más recuerdos</button>
+</div>
+
+<script>
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxHVG0HwmjPQzHKWFeCP4BegeNiFvTmTPeBVNQEK6wRzdywzIcXMXgVZEwffGRhxRwPjQ/exec';
+  const MAX_FILE_SIZE_MB = 40; // Límite de seguridad para evitar caídas en Apps Script
+
+  const input = document.getElementById('files');
+  const button = document.getElementById('btn-text');
+  const overall = document.getElementById('overall');
+  const overallText = document.getElementById('overall-text');
+  const overallPercent = document.getElementById('overall-percent');
+  const overallBar = document.getElementById('bar');
+  const fileList = document.getElementById('file-list');
+  const status = document.getElementById('status');
+  const resetBtn = document.getElementById('reset-btn');
+
+  // Elementos del Modal
+  const nameModal = document.getElementById('name-modal');
+  const nameInput = document.getElementById('uploader-name');
+  const nameError = document.getElementById('name-error');
+  const saveNameBtn = document.getElementById('save-name-btn');
+
+  let selectedFiles = [];
+  let completed = 0;
+  let failed = 0;
+
+  // Interceptar la selección de archivos
+  input.addEventListener('change', () => {
+    if (!input.files.length) return;
+
+    if (!localStorage.getItem('weddingGuestName')) {
+      nameModal.style.display = 'flex'; // Mostrar modal si no hay nombre guardado
+    } else {
+      startUpload(); // Si ya existe, subir directo
+    }
+  });
+
+  resetBtn.addEventListener('click', resetUploader);
+
+  // Lógica de Validación y Guardado de Nombre
+  saveNameBtn.addEventListener('click', () => {
+    let val = nameInput.value.trim();
+    
+    // Solo letras y espacios
+    let regex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+    
+    if (val.length < 3) {
+      nameError.innerText = "El nombre debe tener al menos 3 letras.";
+      return;
+    }
+    if (!regex.test(val)) {
+      nameError.innerText = "Solo se permiten letras. (Sin números ni símbolos).";
+      return;
+    }
+    // Debe tener al menos una vocal para evitar cosas como "ERT", "QWR"
+    if (!/[aeiouáéíóú]/i.test(val)) {
+      nameError.innerText = "Ingresa un nombre válido.";
+      return;
+    }
+
+    // Formatear: juanito_herrera_molina
+    let formattedName = val.toLowerCase().replace(/\s+/g, '_');
+    
+    localStorage.setItem('weddingGuestName', formattedName);
+    nameModal.style.display = 'none';
+    nameError.innerText = "";
+    
+    startUpload();
+  });
+
+  function startUpload() {
+    selectedFiles = Array.from(input.files);
+    if (!selectedFiles.length) return;
+
+    completed = 0;
+    failed = 0;
+
+    overall.style.display = 'block';
+    fileList.style.display = 'block';
+    status.style.display = 'none';
+    status.className = '';
+    resetBtn.style.display = 'none';
+
+    button.disabled = true;
+    button.innerText = '⏳ Subiendo recuerdos...';
+
+    createFileCards();
+    updateOverall(0);
+    uploadNext(0);
+  }
+
+  function createFileCards() {
+    fileList.innerHTML = '';
+
+    selectedFiles.forEach((file, index) => {
+      const item = document.createElement('div');
+      item.className = 'file-item';
+      item.id = 'file-' + index;
+
+      const preview = document.createElement('div');
+      preview.className = 'preview';
+
+      if (file.type.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.alt = 'Vista previa';
+        img.src = URL.createObjectURL(file);
+        preview.appendChild(img);
+      } else {
+        preview.innerText = '🎥';
+      }
+
+      const info = document.createElement('div');
+      info.className = 'file-info';
+
+      const guestName = localStorage.getItem('weddingGuestName');
+      const finalFileName = guestName + '_' + file.name;
+
+      const name = document.createElement('div');
+      name.className = 'file-name';
+      name.title = finalFileName; 
+      name.innerText = finalFileName; // Mostrar el nombre ya renombrado en la UI
+
+      const fileStatus = document.createElement('div');
+      fileStatus.className = 'file-status';
+      fileStatus.id = 'file-status-' + index;
+      fileStatus.innerText = index === 0 ? 'Preparando...' : 'Esperando...';
+
+      const miniProgress = document.createElement('div');
+      miniProgress.className = 'mini-progress';
+      const miniFill = document.createElement('div');
+      miniFill.className = 'mini-fill';
+      miniFill.id = 'mini-fill-' + index;
+
+      miniProgress.appendChild(miniFill);
+      info.appendChild(name);
+      info.appendChild(fileStatus);
+      info.appendChild(miniProgress);
+
+      const check = document.createElement('div');
+      check.className = 'check';
+      check.id = 'check-' + index;
+      check.innerText = '•';
+
+      item.appendChild(preview);
+      item.appendChild(info);
+      item.appendChild(check);
+
+      fileList.appendChild(item);
+    });
+  }
+
+  function uploadNext(index) {
+    if (index >= selectedFiles.length) {
+      finishUpload();
+      return;
+    }
+
+    const file = selectedFiles[index];
+
+    // Validación de peso para evitar que Apps Script colapse y se quede en 90%
+    const MAX_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+    if (file.size > MAX_SIZE_BYTES) {
+      markFailed(index, `Video muy pesado (máx ${MAX_FILE_SIZE_MB}MB)`);
+      failed++;
+      updateOverall(getOverallProgress(index, 100));
+      setTimeout(() => uploadNext(index + 1), 350);
+      return;
+    }
+
+    setFileStatus(index, 'Subiendo... 0%');
+    setMiniProgress(index, 0);
+
+    const reader = new FileReader();
+
+    reader.onload = function(event) {
+      // Renombrar dinámicamente utilizando el nombre guardado en caché
+      const guestName = localStorage.getItem('weddingGuestName') || 'invitado';
+      const finalFileName = guestName + '_' + file.name;
+
+      const payload = JSON.stringify({
+        base64: event.target.result,
+        filename: finalFileName
+      });
+
+      uploadFile(index, payload);
+    };
+
+    reader.onerror = function() {
+      markFailed(index, 'No se pudo leer el archivo');
+      failed++;
+      uploadNext(index + 1);
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  function uploadFile(index, payload) {
+    let visualPercent = 0;
+    setFileStatus(index, 'Subiendo... 0%');
+    setMiniProgress(index, 0);
+
+    const progressTimer = setInterval(function() {
+      if (visualPercent < 90) {
+        const increment = visualPercent < 50 ? 4 : visualPercent < 75 ? 2 : 1;
+        visualPercent = Math.min(90, visualPercent + increment);
+
+        setMiniProgress(index, visualPercent);
+        setFileStatus(index, 'Subiendo... ' + visualPercent + '%');
+        updateOverall(getOverallProgress(index, visualPercent));
+      }
+    }, 180);
+
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: payload
+    })
+    .then(function(response) {
+      if (!response.ok) throw new Error('Error ' + response.status);
+      return response.json();
+    })
+    .then(function(response) {
+      clearInterval(progressTimer);
+
+      if (response.success) {
+        markDone(index);
+        completed++;
+      } else {
+        markFailed(index, response.error || 'No se pudo guardar');
+        failed++;
+      }
+      
+      updateOverall(getOverallProgress(index, 100));
+      setTimeout(() => uploadNext(index + 1), 350);
+    })
+    .catch(function(err) {
+      clearInterval(progressTimer);
+      markFailed(index, 'Error de conexión');
+      failed++;
+      updateOverall(getOverallProgress(index, 100));
+      setTimeout(() => uploadNext(index + 1), 350);
+    });
+  }
+
+  function getOverallProgress(currentIndex, currentPercent) {
+    if (!selectedFiles.length) return 0;
+    const progress = ((currentIndex + currentPercent / 100) / selectedFiles.length) * 100;
+    return Math.min(100, Math.round(progress));
+  }
+
+  function updateOverall(percent) {
+    overallBar.style.width = percent + '%';
+    overallPercent.innerText = percent + '%';
+    if (completed < selectedFiles.length) {
+      overallText.innerText = 'Cargando ' + (completed + 1) + ' de ' + selectedFiles.length + ' archivos';
+    }
+  }
+
+  function setMiniProgress(index, percent) {
+    const bar = document.getElementById('mini-fill-' + index);
+    if (bar) bar.style.width = percent + '%';
+  }
+
+  function setFileStatus(index, text) {
+    const element = document.getElementById('file-status-' + index);
+    if (element) element.innerText = text;
+  }
+
+  function markDone(index) {
+    const item = document.getElementById('file-' + index);
+    const check = document.getElementById('check-' + index);
+    item.classList.remove('failed');
+    item.classList.add('done');
+    setMiniProgress(index, 100);
+    setFileStatus(index, '✓ ¡Cargado correctamente!');
+    check.innerText = '✓';
+  }
+
+  function markFailed(index, message) {
+    const item = document.getElementById('file-' + index);
+    const check = document.getElementById('check-' + index);
+    item.classList.remove('done');
+    item.classList.add('failed');
+    setFileStatus(index, '✕ ' + message);
+    check.innerText = '!';
+  }
+
+  function finishUpload() {
+    overallBar.style.width = '100%';
+    overallPercent.innerText = '100%';
+
+    if (failed === 0) {
+      overallText.innerText = '¡Todos los recuerdos están cargados!';
+      status.className = 'success';
+      status.innerHTML = '🎉 <strong>¡Todo listo!</strong><br>Se cargaron correctamente ' + completed + ' archivo(s).<br>¡Gracias por compartir estos recuerdos con nosotros! 🤍';
+    } else {
+      overallText.innerText = completed + ' cargados · ' + failed + ' con error';
+      status.className = 'error';
+      status.innerHTML = '⚠️ Algunos archivos no pudieron cargarse.<br>Cargados: <strong>' + completed + '</strong> · Con error: <strong>' + failed + '</strong>';
+    }
+
+    status.style.display = 'block';
+    button.disabled = false;
+    button.innerText = '📸 Seleccionar más fotos o videos';
+    resetBtn.style.display = 'inline-block';
+  }
+
+  function resetUploader() {
+    input.value = '';
+    selectedFiles = [];
+    completed = 0;
+    failed = 0;
+
+    overall.style.display = 'none';
+    fileList.style.display = 'none';
+    status.style.display = 'none';
+    resetBtn.style.display = 'none';
+    fileList.innerHTML = '';
+
+    overallBar.style.width = '0%';
+    overallPercent.innerText = '0%';
+    overallText.innerText = 'Preparando archivos...';
+
+    button.disabled = false;
+    button.innerText = '📸 Seleccionar fotos o videos';
+  }
+</script>
+
+</body>
+</html>
