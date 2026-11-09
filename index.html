@@ -197,7 +197,7 @@
       background-color: #8c7853;
       height: 100%;
       width: 0%;
-      transition: width 0.2s ease;
+      transition: width 0.4s ease-out;
       border-radius: 999px;
     }
 
@@ -254,6 +254,20 @@
 
     .file-status { font-size: 12px; color: #8a8378; margin-top: 4px; }
 
+    /* Aviso para videos (debajo del estado del archivo) */
+    .file-note {
+      font-size: 11px;
+      color: #9a7b3f;
+      background: #fbf4e4;
+      border-radius: 6px;
+      padding: 4px 8px;
+      margin-top: 6px;
+      line-height: 1.35;
+    }
+
+    .file-item.done .file-note,
+    .file-item.failed .file-note { display: none; }
+
     .file-item.done .file-status { color: #25803d; font-weight: 600; }
     .file-item.failed .file-status { color: #b22222; font-weight: 600; }
 
@@ -270,7 +284,7 @@
       height: 100%;
       background: #8c7853;
       border-radius: 99px;
-      transition: width 0.15s linear;
+      transition: width 0.4s ease-out;
     }
 
     .file-item.done .mini-fill { background: #39a956; }
@@ -587,6 +601,18 @@
     return map[ext] || 'application/octet-stream';
   }
 
+  function isImage(file) {
+    return guessMime(file).startsWith('image/');
+  }
+
+  // Fotos primero; dentro de cada grupo se respeta el orden en que se eligieron
+  function sortPhotosFirst(files) {
+    return files
+      .map(function (f, i) { return { f: f, i: i, rank: isImage(f) ? 0 : 1 }; })
+      .sort(function (a, b) { return (a.rank - b.rank) || (a.i - b.i); })
+      .map(function (x) { return x.f; });
+  }
+
   // ---------- CARGA ----------
   input.addEventListener('change', startUpload);
   resetBtn.addEventListener('click', resetUploader);
@@ -599,7 +625,7 @@
   });
 
   async function startUpload() {
-    selectedFiles = Array.from(input.files);
+    selectedFiles = sortPhotosFirst(Array.from(input.files));
     if (!selectedFiles.length || !guest) return;
 
     completed = 0;
@@ -641,7 +667,7 @@
       const preview = document.createElement('div');
       preview.className = 'preview';
 
-      if (file.type.startsWith('image/')) {
+      if (isImage(file)) {
         const img = document.createElement('img');
         img.alt = 'Vista previa';
         const url = URL.createObjectURL(file);
@@ -676,6 +702,14 @@
       miniProgress.appendChild(miniFill);
       info.appendChild(name);
       info.appendChild(fileStatus);
+
+      if (!isImage(file)) {
+        const note = document.createElement('div');
+        note.className = 'file-note';
+        note.innerText = '🎥 Los videos tardan un poco más en subir. ¡Gracias por tu paciencia!';
+        info.appendChild(note);
+      }
+
       info.appendChild(miniProgress);
 
       const check = document.createElement('div');
@@ -691,11 +725,49 @@
     });
   }
 
+  // Progreso suave por archivo (el navegador no puede medir el envío real a Apps Script
+  // sin romper CORS, así que se combina avance real por partes + avance simulado):
+  //  - "floor": avance REAL (partes ya confirmadas por Drive).
+  //  - "limit": hasta dónde puede avanzar el progreso simulado mientras se espera
+  //    respuesta del servidor (rápido al inicio, cada vez más lento, nunca llega al 100%).
+  function createProgressSim(index, size) {
+    let shown = 0;
+    let floor = 0;
+    let limit = 4;
+
+    const timer = setInterval(function () {
+      if (shown < floor) {
+        // Alcanza rápido el avance real
+        shown = Math.min(floor, shown + Math.max((floor - shown) * 0.25, 0.4));
+      } else if (shown < limit) {
+        // Avance simulado: rápido al principio, se frena al acercarse al límite
+        shown += (limit - shown) * 0.03;
+      }
+
+      shown = Math.min(shown, 99);
+
+      const pct = Math.floor(shown);
+      setMiniProgress(index, shown.toFixed(1));
+      setFileStatus(index, shown < 4 ? 'Preparando...' : 'Subiendo... ' + pct + '%');
+      updateOverall(Math.floor(((doneBytes + (shown / 100) * size) / totalBytes) * 100));
+    }, 120);
+
+    return {
+      setFloor: function (v) { floor = Math.max(floor, Math.min(v, 99)); limit = Math.max(limit, floor); },
+      setLimit: function (v) { limit = Math.max(limit, Math.min(v, 99), floor); },
+      stop: function () { clearInterval(timer); }
+    };
+  }
+
   async function uploadOne(index) {
     const file = selectedFiles[index];
+    const sim = createProgressSim(index, file.size);
 
-    setFileStatus(index, 'Preparando... 0%');
+    setFileStatus(index, 'Preparando...');
     setMiniProgress(index, 0);
+
+    // Reparte 0-100% así: 0-4% abrir sesión, 4-99% envío; 100% solo cuando Drive confirma
+    const map = function (pct) { return 4 + pct * 0.95; };
 
     try {
       if (!file.size) throw new Error('El archivo está vacío');
@@ -703,6 +775,7 @@
       const filename = buildFilename(guest.slug, file.name);
 
       // 1) Abrir sesión de carga en Drive
+      sim.setLimit(4);
       const init = await withRetry(function () {
         return postJSON({
           action: 'init',
@@ -711,6 +784,7 @@
           size: file.size
         });
       });
+      sim.setFloor(4);
 
       // 2) Enviar el archivo por partes
       let offset = 0;
@@ -718,8 +792,12 @@
 
       while (offset < file.size) {
         const end = Math.min(offset + CHUNK_SIZE, file.size);
+        const to = map((end / file.size) * 100);
         const data = await readChunk(file.slice(offset, end));
         const start = offset;
+
+        // Mientras se envía esta parte, el progreso simulado puede acercarse a "to"
+        sim.setLimit(to - 0.5);
 
         lastResponse = await withRetry(function () {
           return postJSON({
@@ -733,21 +811,18 @@
         });
 
         offset = end;
-
-        const percent = Math.floor((offset / file.size) * 100);
-        // Reservamos el 100% para cuando Drive confirme el archivo completo
-        setMiniProgress(index, Math.min(percent, 99));
-        setFileStatus(index, 'Subiendo... ' + Math.min(percent, 99) + '%');
-        updateOverall(Math.round(((doneBytes + offset) / totalBytes) * 100));
+        sim.setFloor(to);
       }
 
       if (!lastResponse || !lastResponse.done) {
         throw new Error('Drive no confirmó el archivo completo');
       }
 
+      sim.stop();
       markDone(index);
       completed++;
     } catch (err) {
+      sim.stop();
       console.error('Error subiendo ' + file.name + ':', err);
       markFailed(index, 'No se pudo subir. Intenta de nuevo');
       failed++;
@@ -774,7 +849,9 @@
     });
   }
 
-  // POST como texto plano (no dispara preflight CORS con Apps Script)
+  // POST como texto plano (no dispara preflight CORS con Apps Script).
+  // IMPORTANTE: no usar xhr.upload.onprogress ni cabeceras personalizadas:
+  // convierten la petición en "no simple" y Apps Script bloquea el preflight (CORS).
   async function postJSON(obj) {
     const response = await fetch(SCRIPT_URL, {
       method: 'POST',
